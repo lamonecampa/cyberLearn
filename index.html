@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="id" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Prevent fatal "Cannot set property fetch of #<Window>" errors on sandboxed browsers/iframes
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var fetchValue = originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return fetchValue;
+            },
+            set: function(val) {
+              fetchValue = val;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          console.warn("Failed to patch window.fetch property descriptor:", e);
+        }
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="CyberMentor AI - Platform simulasi interaktif belajar keamanan siber (Cybersecurity) dan Bug Hunting berbasis studi kasus dunia nyata." />
+    <meta name="theme-color" content="#030712" />
+    <title>CyberMentor AI - Akademi Keamanan Siber & Simulasi Bug Bounty</title>
+  </head>
+  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-amber-500/30 selection:text-amber-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
