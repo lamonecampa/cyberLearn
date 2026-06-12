@@ -1,8 +1,8 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
-import {spawn} from 'child_process';
+import { defineConfig } from 'vite';
+import { spawn } from 'child_process';
 
 function apiServerPlugin() {
   let child: any = null;
@@ -23,9 +23,16 @@ function apiServerPlugin() {
   };
 }
 
-export default defineConfig(() => {
+// Tambahkan parameter { command } untuk mendeteksi apakah ini 'serve' (dev) atau 'build' (prod)
+export default defineConfig(({ command }) => {
+  // Hanya jalankan apiServerPlugin jika berada di mode development ('serve')
+  const isDev = command === 'serve';
+
   return {
-    plugins: [react(), tailwindcss(), apiServerPlugin()],
+    // Jika di Vercel (build), jalankan react() & tailwindcss() saja, abaikan apiServerPlugin()
+    plugins: isDev 
+      ? [react(), tailwindcss(), apiServerPlugin()] 
+      : [react(), tailwindcss()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
@@ -41,10 +48,7 @@ export default defineConfig(() => {
           secure: false,
         }
       },
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };
