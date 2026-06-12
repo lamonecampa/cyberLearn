@@ -1,0 +1,6 @@
+{
+  "name": "CyberMentor AI",
+  "description": "An interactive, gamified cybersecurity and bug hunting training simulator guided by an elite mentor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
